@@ -182,7 +182,7 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
 
     builder = FitFileBuilder(auto_define=True, min_string_size=50)
 
-    # FILE_ID
+    # 1. FILE_ID
     file_id = FileIdMessage()
     file_id.type = FileType.ACTIVITY
     file_id.manufacturer = Manufacturer.DEVELOPMENT
@@ -191,13 +191,21 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
     file_id.serial_number = 1
     builder.add(file_id)
 
-    # SET messages
+    # 2. WORKOUT — must come before SET data so Garmin parses the name
+    workout = WorkoutMessage()
+    workout.workout_name = "Fitbod Workout"
+    workout.sport = Sport.TRAINING
+    workout.sub_sport = SubSport.STRENGTH_TRAINING
+    workout.num_valid_steps = total_sets
+    builder.add(workout)
+
+    # 3. SET messages
     for i, item in enumerate(flat):
         s = SetMessage()
         offset_ms = sum(max(flat[j].get("duration_secs", 0), 30) for j in range(i)) * 1000
         s.timestamp = start_ts + offset_ms
         s.start_time = start_ts + offset_ms
-        s.duration = float(max(item.get("duration_secs", 0), 30))  # seconds (scale=1000)
+        s.duration = float(max(item.get("duration_secs", 0), 30))
         s.repetitions = item.get("reps", 0)
         weight_lbs = item.get("weight_lbs", 0)
         if weight_lbs > 0:
@@ -209,11 +217,11 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
         s.weight_display_unit = FitBaseUnit.POUND.value
         builder.add(s)
 
-    # LAP
+    # 4. LAP
     lap = LapMessage()
-    lap.timestamp = end_ts          # ms
-    lap.start_time = start_ts       # ms
-    lap.total_elapsed_time = float(total_duration_secs)   # seconds (scale=1000)
+    lap.timestamp = end_ts
+    lap.start_time = start_ts
+    lap.total_elapsed_time = float(total_duration_secs)
     lap.total_timer_time = float(total_duration_secs)
     lap.lap_trigger = LapTrigger.SESSION_END
     lap.event = Event.LAP
@@ -222,14 +230,7 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
     lap.sub_sport = SubSport.STRENGTH_TRAINING
     builder.add(lap)
 
-    # WORKOUT — sets the activity name shown in Garmin Connect
-    workout = WorkoutMessage()
-    workout.workout_name = "Fitbod Workout"
-    workout.sport = Sport.TRAINING
-    workout.sub_sport = SubSport.STRENGTH_TRAINING
-    builder.add(workout)
-
-    # SESSION
+    # 5. SESSION
     session = SessionMessage()
     session.timestamp = end_ts
     session.start_time = start_ts
@@ -243,7 +244,7 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
     session.num_laps = 1
     builder.add(session)
 
-    # ACTIVITY
+    # 6. ACTIVITY
     activity = ActivityMessage()
     activity.timestamp = end_ts
     activity.total_timer_time = float(total_duration_secs)
@@ -328,10 +329,30 @@ class Uploader:
             tmp_path = f.name
 
         try:
-            self._client.upload_activity(tmp_path)
-            return True
+            response = self._client.upload_activity(tmp_path)
         except Exception as exc:
             log.error("Upload failed for %s: %s", workout_date, exc)
             return False
         finally:
             Path(tmp_path).unlink(missing_ok=True)
+
+        # Rename the activity to "Fitbod Workout" so it's identifiable in Garmin Connect
+        try:
+            activity_id = (
+                response.get("detailedImportResult", {})
+                        .get("successes", [{}])[0]
+                        .get("internalId")
+            )
+            if activity_id:
+                self._client.garth.put(
+                    "connectapi",
+                    f"/activity-service/activity/{activity_id}",
+                    json={"activityName": "Fitbod Workout"},
+                )
+                log.debug("Renamed activity %s to 'Fitbod Workout'", activity_id)
+            else:
+                log.warning("Could not extract activity ID from upload response: %s", response)
+        except Exception as exc:
+            log.warning("Activity rename failed for %s: %s", workout_date, exc)
+
+        return True
