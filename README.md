@@ -1,5 +1,7 @@
 # Garmin–Fitbod Sync
 
+By [xsparkmatrix](https://github.com/xsparkmatrix)
+
 Sync your [Fitbod](https://fitbod.me) workout history to [Garmin Connect](https://connect.garmin.com) as strength training activities.
 
 Fitbod does not natively integrate with Garmin Connect. This tool bridges that gap by reading a Fitbod CSV export and uploading each workout as a `FitnessEquipment` strength activity, including exercise names, sets, reps, and weight.

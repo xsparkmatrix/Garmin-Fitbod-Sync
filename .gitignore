@@ -2,7 +2,6 @@
 *.csv
 upload_tracker.json
 unmapped_exercises.txt
-user_mappings.json
 
 # ── Garmin token cache (stored outside repo in ~/.garminconnect) ──────────────
 .garminconnect/
