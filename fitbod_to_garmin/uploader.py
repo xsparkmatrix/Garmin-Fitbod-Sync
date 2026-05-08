@@ -144,6 +144,7 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
     from fit_tool.profile.messages.lap_message import LapMessage
     from fit_tool.profile.messages.session_message import SessionMessage
     from fit_tool.profile.messages.set_message import SetMessage
+    from fit_tool.profile.messages.workout_message import WorkoutMessage
     from fit_tool.profile.profile_type import (
         Activity,
         Event,
@@ -220,6 +221,13 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
     lap.sport = Sport.TRAINING
     lap.sub_sport = SubSport.STRENGTH_TRAINING
     builder.add(lap)
+
+    # WORKOUT — sets the activity name shown in Garmin Connect
+    workout = WorkoutMessage()
+    workout.workout_name = "Fitbod Workout"
+    workout.sport = Sport.TRAINING
+    workout.sub_sport = SubSport.STRENGTH_TRAINING
+    builder.add(workout)
 
     # SESSION
     session = SessionMessage()
