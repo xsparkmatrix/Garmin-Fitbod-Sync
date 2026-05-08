@@ -149,6 +149,7 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
         Event,
         EventType,
         FileType,
+        FitBaseUnit,
         LapTrigger,
         Manufacturer,
         SessionTrigger,
@@ -197,12 +198,14 @@ def _build_fit(workout_date: date, sets_data: list[dict]) -> bytes:
         s.start_time = start_ts + offset_ms
         s.duration = float(max(item.get("duration_secs", 0), 30))  # seconds (scale=1000)
         s.repetitions = item.get("reps", 0)
-        weight_kg = item.get("weight_lbs", 0) * 0.453592
-        s.weight = round(weight_kg, 2)
+        weight_lbs = item.get("weight_lbs", 0)
+        if weight_lbs > 0:
+            s.weight = round(weight_lbs * 0.453592, 3)
         s.set_type = SetType.ACTIVE
         s.category = _fit_category(
             item.get("garmin_name", ""), item.get("garmin_category", "")
         )
+        s.weight_display_unit = FitBaseUnit.POUND.value
         builder.add(s)
 
     # LAP
