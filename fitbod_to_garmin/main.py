@@ -79,6 +79,11 @@ def main() -> None:
         help="Re-prompt for previously skipped or guessed exercises",
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-upload workouts even if already synced (delete old ones from Garmin first to avoid duplicates)",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
@@ -121,7 +126,7 @@ def main() -> None:
     all_unmapped: set[str] = set()
 
     for workout in workouts:
-        if tracker.already_uploaded(workout.date):
+        if tracker.already_uploaded(workout.date) and not args.force:
             print(f"  ⏭️  {workout.date} — already synced, skipping.")
             skipped_dup += 1
             continue
