@@ -1,0 +1,7 @@
+{
+  "Pendulum Squat Machine": ["HACK_SQUAT", "LEGS"],
+  "Assisted Pull-Up": ["PULL_UP", "BACK"],
+  "Assisted Chin-Up": ["CHIN_UP", "BACK"],
+  "Cable Pull Through": ["CABLE_PULL_THROUGH", "LEGS"],
+  "Glute Kickback": ["CABLE_KICKBACK", "LEGS"]
+}
